@@ -1,0 +1,10 @@
+Flask==3.0.3
+flask-restx==1.3.0
+jenkins==1.0.2
+psycopg2-binary
+types-psycopg2
+python-dotenv==1.0.1
+requests==2.31.0
+sqlalchemy
+jenkinsapi
+

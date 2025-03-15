@@ -1,0 +1,14 @@
+# Ignore Python bytecode files
+*.pyc
+*.pyo
+__pycache__/
+
+# Ignore environment folders
+venv/
+.env
+
+# Ignore Jenkins job configuration files
+configs/local.env
+
+# Ignore any log files
+*.log
