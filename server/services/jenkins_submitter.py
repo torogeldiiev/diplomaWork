@@ -21,14 +21,20 @@ class JenkinsSubmitter:
             logger.error("Failed to connect to Jenkins server %s", ex)
             raise
 
-    def trigger_job(self, parameters: dict[str, str], job_type: str):
+    def trigger_job(self, job_type: str, parameters: dict[str, str]):
         if job_type not in JENKINS_PROJECT_NAMES:
             logger.error("Invalid job_type: %s. Must be one of: %s", job_type, JENKINS_PROJECT_NAMES.keys())
 
         job = self.jenkins_server[JENKINS_PROJECT_NAMES[job_type]]
         try:
             queue_item = job.invoke(build_params=parameters)
-            return queue_item
+            logger.info("Jenkins job submitted: %s", queue_item)
+            # queue_item_data = {
+            #     'id': queue_item.id,
+            #     'url': queue_item.url,
+            #     'status': queue_item.status,
+            # }
+            return "success"
         except JenkinsAPIException as ex:
             logger.error("Failed to submit Jenkins job %s", ex)
             return None

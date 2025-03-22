@@ -2,7 +2,7 @@
 Loads necessary environment variables making sure they are kept in secret, preventing data losses
 """
 import os
-
+import logging
 from dotenv import load_dotenv
 
 env_file = os.environ.get("ENV_FILE", "")
@@ -27,3 +27,16 @@ JENKINS_PROJECT_NAMES = {
     "Configdiff": "cdpd-trigger-confdiff-test",
     "Platform": "cdpd-trigger-platform-tests"
 }
+
+log_level_str = os.environ["LOG_LEVEL"]
+LOG_LEVEL = {
+    "DEBUG": logging.DEBUG,
+    "INFO": logging.INFO,
+    "WARNING": logging.WARNING,
+    "ERROR": logging.ERROR,
+}[log_level_str]
+
+LOGGING_HANDLERS = [logging.StreamHandler()]
+
+FLASK_APP_DEBUG = os.environ.get("FLASK_APP_DEBUG", "false").lower() == "true"
+

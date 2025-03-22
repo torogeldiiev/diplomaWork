@@ -14,8 +14,13 @@ if [ -e "$config" ]; then
   config="$(readlink -f "$config")"
 fi
 
+export $(grep -v '^#' "$config" | grep -v '^$' | xargs)
+
 cd "$this_dir"/../server
 source venv/bin/activate
 
+echo "Populating the database with initial mocked test data..."
+python db_utils/populate_db.py
+
 echo "Starting Flask application..."
-ENV_FILE="$config" flask run
+ENV_FILE="$config" flask run --debug

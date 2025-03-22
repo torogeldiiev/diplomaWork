@@ -39,6 +39,19 @@
         </hudson.model.ParametersDefinitionProperty>
     </properties>
     <builders>
-        <!-- Add build steps, e.g., shell commands or invoking scripts -->
+        <hudson.tasks.Shell>
+            <command>
+                #!/bin/bash
+
+                # Load environment variables from local.env file
+                export $(grep -v '^#' "$WORKSPACE/configs/local.env" | grep -v '^$' | xargs)
+
+                # Activate virtual environment
+                source $WORKSPACE/venv/bin/activate
+
+                # Run pytest to execute the test file
+                pytest $WORKSPACE/server/test/test_config_diff.py
+            </command>
+        </hudson.tasks.Shell>
     </builders>
 </project>

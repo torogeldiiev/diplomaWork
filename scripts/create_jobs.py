@@ -1,9 +1,10 @@
+import os
+import sys
+
 import requests
 
-# Jenkins server URL and credentials
-JENKINS_URL = "http://localhost:8080"  # Your Jenkins server URL
-JENKINS_USER = "admin"  # Your Jenkins username
-JENKINS_API_TOKEN = "11b01aab4c7acf3a22ce3ba74c589746ee"  # Your Jenkins API token
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from server.config import JENKINS_URL, JENKINS_API_TOKEN, JENKINS_USER
 
 # The job name
 job_name = "cdpd-trigger-confdiff-test"

@@ -4,17 +4,17 @@ from models.cluster import Cluster
 from service_factory import ServiceFactory
 from flask import Flask, Response, jsonify, request, send_from_directory
 from flask_restx import Api, Resource, Namespace, fields
-from routes.cluster_routes import cluster_bp
+from config import FLASK_APP_DEBUG
+import logging
+from log_utils import init_logger
 
+init_logger()
 app = Flask(__name__)
-
 service_factory = ServiceFactory()
 cluster_handler_service = service_factory.get_clusters_handler_service()
 jenkins_submitter_service = service_factory.get_jenkins_submitter_service()
 
 api = Api(app, version="1.0", title="Backend API", doc="/api/docs")
-# api.add_namespace(cluster_bp)
-# app.register_blueprint(cluster_bp)
 
 @api.route("/api/clusters/add")
 class ClusterHandler(Resource):
@@ -40,13 +40,13 @@ class ClusterHandler(Resource):
         return msg
 
 
-# @api.route("/api/jenkins/trigger")
-# class JenkinsTrigger:
-#     def post(self) -> Response:
-#         job_type = request.json["job_type"]
-#         parameters = request.json["parameters"]
-#         return jenkins_submitter_service.trigger_job(job_type, parameters)
+@api.route("/api/jenkins/trigger")
+class JenkinsTrigger(Resource):
+    def post(self) -> Response:
+        job_type = request.json["job_type"]
+        parameters = request.json["parameters"]
+        return jenkins_submitter_service.trigger_job(job_type, parameters)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=FLASK_APP_DEBUG)
