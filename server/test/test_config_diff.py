@@ -1,8 +1,9 @@
 import pytest
 import sys
 import os
+from dotenv import load_dotenv
+load_dotenv(os.getenv("ENV_FILE", "configs/local.env"))
 
-# Add the server directory to the sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'server')))
 from server.models.cluster import Cluster
 from server.database_handler import db_session_maker

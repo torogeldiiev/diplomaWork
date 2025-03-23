@@ -3,9 +3,12 @@ Loads necessary environment variables making sure they are kept in secret, preve
 """
 import os
 import logging
+from pathlib import Path
 from dotenv import load_dotenv
 
-env_file = os.environ.get("ENV_FILE", "")
+PROJECT_ROOT_DIR = Path(__file__).parent.parent
+
+env_file = os.environ.get("ENV_FILE", f"{PROJECT_ROOT_DIR}/configs/local.env")
 if env_file:
     load_dotenv(env_file)
 
