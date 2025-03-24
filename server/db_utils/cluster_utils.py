@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 import logging
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
@@ -52,3 +52,12 @@ def update_cluster_by_id(db_session: Session, data: dict[str, Any], cluster_id: 
     except SQLAlchemyError as ex:
         logger.error("Unexpected error occurred while updating product %s: %s", cluster_id, ex)
         return None
+
+
+def get_all_clusters(db_session: Session) -> List[Dict[str, Any]]:
+    try:
+        clusters = db_session.query(Cluster).all()
+        return [cluster.as_dict() for cluster in clusters]
+    except SQLAlchemyError as ex:
+        logger.error("Unexpected error occurred while getting all clusters: %s", ex)
+        return []

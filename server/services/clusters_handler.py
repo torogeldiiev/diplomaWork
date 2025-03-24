@@ -26,3 +26,7 @@ class ClustersHandler:
     def update_cluster(self, cluster: Cluster, cluster_id: int):
         with self.db_session_maker() as session:
             return cluster_utils.update_cluster_by_id(session, cluster, cluster_id)
+
+    def get_all_clusters(self):
+        with self.db_session_maker() as session:
+            return cluster_utils.get_all_clusters(session)

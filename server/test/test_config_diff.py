@@ -1,8 +1,8 @@
 import pytest
 import sys
 import os
-from dotenv import load_dotenv
-load_dotenv(os.getenv("ENV_FILE", "configs/local.env"))
+# from dotenv import load_dotenv
+# load_dotenv(os.getenv("ENV_FILE", "configs/local.env"))
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'server')))
 from server.models.cluster import Cluster

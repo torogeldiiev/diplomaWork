@@ -4,11 +4,6 @@
         <hudson.model.ParametersDefinitionProperty>
             <parameterDefinitions>
                 <hudson.model.StringParameterDefinition>
-                    <name>release_line</name>
-                    <defaultValue></defaultValue>
-                    <description>Release version (e.g., 7.1.7-SP2 or 7.1.9->7.3.1)</description>
-                </hudson.model.StringParameterDefinition>
-                <hudson.model.StringParameterDefinition>
                     <name>source</name>
                     <defaultValue></defaultValue>
                     <description>Source version (e.g., CHF2 or CDH:gbn://123456)</description>
@@ -42,7 +37,6 @@
         <userRemoteConfigs>
             <hudson.plugins.git.UserRemoteConfig>
                 <url>https://github.com/torogeldiiev/diplomaWork</url>
-                <credentialsId>github</credentialsId>
             </hudson.plugins.git.UserRemoteConfig>
         </userRemoteConfigs>
         <branches>
@@ -51,13 +45,44 @@
             </hudson.plugins.git.BranchSpec>
         </branches>
     </scm>
+    <buildWrappers>
+        <org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper>
+            <bindings>
+                <org.jenkinsci.plugins.credentialsbinding.impl.FileBinding>
+                    <credentialsId>env_vars</credentialsId>
+                    <variable>ENV_FILE</variable>
+                </org.jenkinsci.plugins.credentialsbinding.impl.FileBinding>
+            </bindings>
+        </org.jenkinsci.plugins.credentialsbinding.impl.SecretBuildWrapper>
+    </buildWrappers>
+
     <builders>
         <hudson.tasks.Shell>
         <command>
             #!/bin/bash
+            echo "ENV_FILE: $ENV_FILE"
 
-            # Load environment variables
-            export $(grep -v '^#' "configs/local.env" | grep -v '^$' | xargs)
+            if [ -f "$ENV_FILE" ]; then
+                echo "File exists: $ENV_FILE"
+                cp "$ENV_FILE" configs/local.env
+                # Source the environment variables
+                set -a
+                source configs/local.env
+                set +a
+                echo "Environment file copied and sourced"
+            else
+                echo "File does not exist or is not accessible."
+                echo "Current directory: $(pwd)"
+                echo "Directory contents:"
+                ls -la
+                exit 1
+            fi
+
+            # Print environment variables for debugging (mask sensitive info)
+            echo "Checking environment variables..."
+            echo "SQL_USR is set: [${SQL_USR:+yes}]"
+            echo "SQL_DB is set: [${SQL_DB:+yes}]"
+            echo "SQL_HOST is set: [${SQL_HOST:+yes}]"
 
             # Create virtual environment if it doesn't exist
             if [ ! -d "venv" ]; then
@@ -71,8 +96,8 @@
             # Install dependencies
             pip install -r server/requirements.txt
 
-            # Run tests
-            pytest server/test/test_config_diff.py
+            # Run tests with environment variables
+            PYTHONPATH=$(pwd) pytest server/test/test_config_diff.py -v
         </command>
     </hudson.tasks.Shell>
     </builders>

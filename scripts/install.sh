@@ -42,5 +42,9 @@ fi
 # Install client-side dependencies
 npm install
 
+# Install additional dependencies
+npm install react-router-dom
+npm install @mui/material @emotion/react @emotion/styled @mui/icons-material
+
 # Build the React app
 npm run build

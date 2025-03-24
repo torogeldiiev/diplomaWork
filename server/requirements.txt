@@ -8,4 +8,4 @@ requests==2.31.0
 sqlalchemy
 jenkinsapi
 pytest
-
+flask-cors
