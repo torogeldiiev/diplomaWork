@@ -22,5 +22,4 @@ dist/
 # Default React assets
 **/public/logo*.png
 
-# Only ignore local.env, keep other config files
 configs/local.env
