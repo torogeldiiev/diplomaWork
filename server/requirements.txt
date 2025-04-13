@@ -9,3 +9,5 @@ sqlalchemy
 jenkinsapi
 pytest
 flask-cors
+pytest-json-report
+

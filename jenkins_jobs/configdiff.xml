@@ -62,23 +62,13 @@
             #!/bin/bash
             echo "ENV_FILE: $ENV_FILE"
 
-            # Debug current permissions
-            echo "Current directory contents and permissions:"
-            ls -la
-            
-            # Create configs directory with proper permissions
             mkdir -p configs
             chmod -R 777 configs
             
             if [ -f "$ENV_FILE" ]; then
-                echo "File exists: $ENV_FILE"
-                # Try creating file first
                 touch configs/local.env
                 chmod 666 configs/local.env
-                # Then copy contents
                 cat "$ENV_FILE" > configs/local.env
-                
-                # Source the environment variables
                 set -a
                 source configs/local.env
                 set +a
@@ -91,27 +81,24 @@
                 exit 1
             fi
 
-            # Print environment variables for debugging (mask sensitive info)
-            echo "Checking environment variables..."
-            echo "SQL_USR is set: [${SQL_USR:+yes}]"
-            echo "SQL_DB is set: [${SQL_DB:+yes}]"
-            echo "SQL_HOST is set: [${SQL_HOST:+yes}]"
-
-            # Create virtual environment if it doesn't exist
             if [ ! -d "venv" ]; then
                 python3 -m venv venv
             fi
 
-            # Activate virtual environment
             source venv/bin/activate
             pwd
             ls -l
-            # Install dependencies
+
             pip install -r server/requirements.txt
 
-            # Run tests with environment variables
-            PYTHONPATH=$(pwd) pytest server/test/test_config_diff.py -v
+            PYTHONPATH=$(pwd) pytest server/test/test_config_diff.py -v --json-report --json-report-file=report.json
         </command>
     </hudson.tasks.Shell>
     </builders>
+    <publishers>
+        <hudson.tasks.ArtifactArchiver>
+            <artifacts>report.json</artifacts>
+            <allowEmptyArchive>false</allowEmptyArchive>
+        </hudson.tasks.ArtifactArchiver>
+    </publishers>
 </project>
