@@ -57,9 +57,27 @@ class ClusterHandler(Resource):
 @api.route("/api/jenkins/trigger")
 class JenkinsTrigger(Resource):
     def post(self) -> Response:
-        job_type = request.json["job_type"]
-        parameters = request.json["parameters"]
-        return jenkins_submitter_service.trigger_job(job_type, parameters)
+        try:
+            job_type = request.json["job_type"]
+            parameters = request.json["parameters"]
+            result = jenkins_submitter_service.trigger_job(job_type, parameters)
+            if isinstance(result, dict):
+                return jsonify(result)
+            else:
+                return jsonify({
+                    "success": False,
+                    "message": "Invalid response from Jenkins service"
+                })
+        except KeyError as e:
+            return jsonify({
+                "success": False,
+                "message": f"Missing required field: {str(e)}"
+            }), 400
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": str(e)
+            }), 500
 
 
 @api.route("/api/jobs")
@@ -96,6 +114,20 @@ class ClustersList(Resource):
         """Get all clusters"""
         clusters = cluster_handler_service.get_all_clusters()
         return jsonify(clusters)
+
+
+@api.route("/api/jenkins/job-results/<job_id>")
+class JenkinsJobResults(Resource):
+    def get(self, job_id: str) -> Response:
+        try:
+            result = jenkins_submitter_service.get_job_results(job_id)
+            return jsonify(result)
+        except Exception as e:
+            logger.error("Error fetching job results: %s", e)
+            return jsonify({
+                "success": False,
+                "message": str(e)
+            }), 500
 
 
 if __name__ == "__main__":

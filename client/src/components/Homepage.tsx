@@ -21,6 +21,7 @@ import {
   Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import TestResults from './TestResults';
 
 interface Job {
   id: string;
@@ -34,6 +35,7 @@ interface Execution {
   status: string;
   startTime: string;
   endTime?: string;
+  buildNumber?: string;
 }
 
 interface Cluster {
@@ -51,6 +53,7 @@ const Homepage = () => {
   const [executions, setExecutions] = useState<Execution[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggerStatus, setTriggerStatus] = useState<{ success?: boolean; message?: string } | null>(null);
+  const [triggeredJobId, setTriggeredJobId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -97,6 +100,7 @@ const Homepage = () => {
 
   const handleTriggerJob = async () => {
     try {
+      console.log('Triggering job with params:', { job_type: selectedJob, parameters });
       const response = await fetch('http://localhost:5000/api/jenkins/trigger', {
         method: 'POST',
         headers: {
@@ -108,18 +112,18 @@ const Homepage = () => {
         }),
       });
       
-      if (response.ok) {
-        setTriggerStatus({ success: true, message: 'Job triggered successfully!' });
-        // Refresh executions after triggering
-        const executionsResponse = await fetch('http://localhost:5000/api/executions');
-        const executionsData = await executionsResponse.json();
-        setExecutions(executionsData);
+      const data = await response.json();
+      console.log('Response from server:', data);
+      
+      if (data.success) {
+        setTriggerStatus({ success: true, message: data.message });
+        setTriggeredJobId(data.data.queue_number);
       } else {
-        setTriggerStatus({ success: false, message: 'Failed to trigger job' });
+        setTriggerStatus({ success: false, message: data.message || 'Failed to trigger job' });
       }
     } catch (error) {
       console.error('Error triggering job:', error);
-      setTriggerStatus({ success: false, message: 'Error triggering job' });
+      setTriggerStatus({ success: false, message: 'Error connecting to server' });
     }
   };
 
@@ -264,22 +268,43 @@ const Homepage = () => {
                   </TableHead>
                   <TableBody>
                     {executions.map((execution) => (
-                      <TableRow key={execution.id}>
-                        <TableCell>{execution.jobName}</TableCell>
-                        <TableCell>{execution.status}</TableCell>
-                        <TableCell>{new Date(execution.startTime).toLocaleString()}</TableCell>
-                        <TableCell>
-                          {execution.endTime
-                            ? new Date(execution.endTime).toLocaleString()
-                            : 'In Progress'}
-                        </TableCell>
-                      </TableRow>
+                      <React.Fragment key={execution.id}>
+                        <TableRow>
+                          <TableCell>{execution.jobName}</TableCell>
+                          <TableCell>{execution.status}</TableCell>
+                          <TableCell>{new Date(execution.startTime).toLocaleString()}</TableCell>
+                          <TableCell>
+                            {execution.endTime
+                              ? new Date(execution.endTime).toLocaleString()
+                              : 'In Progress'}
+                          </TableCell>
+                        </TableRow>
+                        {execution.buildNumber && execution.status === 'IN_PROGRESS' && (
+                          <TableRow>
+                            <TableCell colSpan={4}>
+                              <TestResults jobId={execution.buildNumber} />
+                            </TableCell>
+                          </TableRow>
+                        )}
+                      </React.Fragment>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
             </Paper>
           </Grid>
+
+          {/* Add TestResults component when a job is triggered */}
+          {triggeredJobId && (
+            <Grid item xs={12}>
+              <Paper elevation={3} sx={{ p: 3, mt: 4 }}>
+                <Typography variant="h6" gutterBottom>
+                  Test Results
+                </Typography>
+                <TestResults jobId={triggeredJobId} />
+              </Paper>
+            </Grid>
+          )}
         </Grid>
       </Container>
     </Box>

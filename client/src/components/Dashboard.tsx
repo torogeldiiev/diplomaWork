@@ -16,6 +16,7 @@ const Dashboard = () => {
   const handleJobTrigger = async (jobType: string) => {
     setIsLoading(true);
     try {
+      console.log('Triggering job:', jobType);
       const response = await fetch('http://localhost:5000/api/jenkins/trigger', {
         method: 'POST',
         headers: {
@@ -26,10 +27,27 @@ const Dashboard = () => {
           parameters: {}, // Add job parameters if needed
         }),
       });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      setExecutionData(data);
+      console.log('Response from server:', data);
+      
+      if (data.success) {
+        setExecutionData({
+          ...data.data,
+          message: data.message
+        });
+      } else {
+        throw new Error(data.message || 'Failed to trigger job');
+      }
     } catch (error) {
       console.error('Error triggering job:', error);
+      setExecutionData({ 
+        error: error instanceof Error ? error.message : 'Error connecting to server'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -49,7 +67,7 @@ const Dashboard = () => {
           <Grid item>
             <Button
               variant="contained"
-              onClick={() => handleJobTrigger('Config Diff')}
+              onClick={() => handleJobTrigger('Configdiff')}
               disabled={isLoading}
               sx={{ minWidth: 200 }}
             >
@@ -63,7 +81,7 @@ const Dashboard = () => {
           <Grid item>
             <Button
               variant="contained"
-              onClick={() => handleJobTrigger('Platform Test')}
+              onClick={() => handleJobTrigger('Platform')}
               disabled={isLoading}
               sx={{ minWidth: 200 }}
             >
@@ -81,17 +99,30 @@ const Dashboard = () => {
         </Typography>
         <Paper elevation={2} sx={{ p: 3, backgroundColor: '#f5f5f5' }}>
           {executionData ? (
-            <Box
-              component="pre"
-              sx={{
-                margin: 0,
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                fontFamily: 'monospace'
-              }}
-            >
-              {JSON.stringify(executionData, null, 2)}
-            </Box>
+            <>
+              {executionData.error ? (
+                <Typography color="error">
+                  {executionData.error}
+                </Typography>
+              ) : (
+                <>
+                  <Typography color="success.main" gutterBottom>
+                    Job triggered successfully!
+                  </Typography>
+                  <Box
+                    component="pre"
+                    sx={{
+                      margin: 0,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      fontFamily: 'monospace'
+                    }}
+                  >
+                    {JSON.stringify(executionData, null, 2)}
+                  </Box>
+                </>
+              )}
+            </>
           ) : (
             <Typography color="text.secondary">No job triggered yet</Typography>
           )}
