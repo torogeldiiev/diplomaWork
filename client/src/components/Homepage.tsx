@@ -22,27 +22,9 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import TestResults from './TestResults';
+import { fetchRecentExecutions } from '../api/api';
+import { Execution, Job, Cluster } from '../types';
 
-interface Job {
-  id: string;
-  name: string;
-  parameters: Record<string, string>;
-}
-
-interface Execution {
-  id: string;
-  jobName: string;
-  status: string;
-  startTime: string;
-  endTime?: string;
-  buildNumber?: string;
-}
-
-interface Cluster {
-  id: number;
-  name: string;
-  release_version: string;
-}
 
 const Homepage = () => {
   const navigate = useNavigate();
@@ -69,8 +51,7 @@ const Homepage = () => {
         setClusters(clustersData);
 
         // Fetch executions
-        const executionsResponse = await fetch('http://localhost:5000/api/executions');
-        const executionsData = await executionsResponse.json();
+        const executionsData = await fetchRecentExecutions();
         setExecutions(executionsData);
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -98,6 +79,24 @@ const Homepage = () => {
     }));
   };
 
+  const formatStartTime = (startTime: string): string => {
+    console.log('Start Time:', startTime);
+  if (!startTime) {
+    return 'Empty';  // Return a fallback string when startTime is invalid
+  }
+
+  const formattedTime = startTime.split('.')[0] + startTime.slice(-6);
+  const date = new Date(formattedTime);
+
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    return 'Invalid Date';  // Return a fallback string when the date is invalid
+  }
+
+  return date.toLocaleString();
+};
+
+
   const handleTriggerJob = async () => {
     try {
       console.log('Triggering job with params:', { job_type: selectedJob, parameters });
@@ -118,6 +117,8 @@ const Homepage = () => {
       if (data.success) {
         setTriggerStatus({ success: true, message: data.message });
         setTriggeredJobId(data.data.queue_number);
+        const executionsData = await fetchRecentExecutions();
+        setExecutions(executionsData);
       } else {
         setTriggerStatus({ success: false, message: data.message || 'Failed to trigger job' });
       }
@@ -221,35 +222,6 @@ const Homepage = () => {
             </Paper>
           </Grid>
 
-          {/* Job Parameters Section */}
-          <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Job Parameters
-              </Typography>
-              <TableContainer>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Job Name</TableCell>
-                      <TableCell>Parameters</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {jobs.map((job) => (
-                      <TableRow key={job.id}>
-                        <TableCell>{job.name}</TableCell>
-                        <TableCell>
-                          {Object.keys(job.parameters).join(', ')}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
-          </Grid>
-
           {/* Execution Monitoring Section */}
           <Grid item xs={12}>
             <Paper elevation={3} sx={{ p: 3 }}>
@@ -272,12 +244,7 @@ const Homepage = () => {
                         <TableRow>
                           <TableCell>{execution.jobName}</TableCell>
                           <TableCell>{execution.status}</TableCell>
-                          <TableCell>{new Date(execution.startTime).toLocaleString()}</TableCell>
-                          <TableCell>
-                            {execution.endTime
-                              ? new Date(execution.endTime).toLocaleString()
-                              : 'In Progress'}
-                          </TableCell>
+                          <TableCell>{formatStartTime(execution.startTime)}</TableCell>
                         </TableRow>
                         {execution.buildNumber && execution.status === 'IN_PROGRESS' && (
                           <TableRow>

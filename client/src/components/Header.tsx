@@ -60,7 +60,7 @@ const Header: React.FC = () => {
             fontWeight: 700,
           }}
         >
-          Your App Name
+          Test execution manager
         </Typography>
 
         {isMobile ? (

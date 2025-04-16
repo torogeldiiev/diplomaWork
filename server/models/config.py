@@ -20,11 +20,3 @@ class Config(Base):
             "config_name": self.config_type,
             "config_value": self.config_value
         }
-
-    def as_list(self):
-        return [
-            self.id,
-            self.cluster_id,
-            self.config_type,
-            self.config_value
-        ]

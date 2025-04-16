@@ -8,7 +8,7 @@ class ServiceFactory:
     def __init__(self):
         self.db_session_maker = db_session_maker
         self.clusters_handler = ClustersHandler(self.db_session_maker)
-        self.jenkins_submitter = JenkinsSubmitter(JENKINS_URL, JENKINS_USER, JENKINS_PSWRD)
+        self.jenkins_submitter = JenkinsSubmitter(JENKINS_URL, JENKINS_USER, JENKINS_PSWRD, db_session_maker)
 
     def get_clusters_handler_service(self) -> ClustersHandler:
         return self.clusters_handler

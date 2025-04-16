@@ -19,9 +19,3 @@ class Cluster(Base):
             "release_version": self.release_version,
         }
 
-    def as_list(self):
-        return [
-            self.id,
-            self.name,
-            self.release_version,
-        ]

@@ -11,7 +11,7 @@ class ClustersHandler:
     def __init__(self, db_session_maker):
         self.db_session_maker = db_session_maker
 
-    def add_cluster(self, cluster: Cluster) :
+    def add_cluster(self, cluster: Cluster):
         with self.db_session_maker() as session:
             return cluster_utils.add_cluster(session, cluster)
 

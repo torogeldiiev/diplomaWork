@@ -8,10 +8,12 @@ import {
   Grid,
   CircularProgress
 } from '@mui/material';
+import TestResults from './TestResults'; // Import the TestResults component
 
 const Dashboard = () => {
   const [executionData, setExecutionData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [jobId, setJobId] = useState<string | null>(null); // Add jobId state to store the current job ID
 
   const handleJobTrigger = async (jobType: string) => {
     setIsLoading(true);
@@ -27,25 +29,26 @@ const Dashboard = () => {
           parameters: {}, // Add job parameters if needed
         }),
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       console.log('Response from server:', data);
-      
+
       if (data.success) {
         setExecutionData({
           ...data.data,
           message: data.message
         });
+        setJobId(data.data.job_id); // Set jobId from the response
       } else {
         throw new Error(data.message || 'Failed to trigger job');
       }
     } catch (error) {
       console.error('Error triggering job:', error);
-      setExecutionData({ 
+      setExecutionData({
         error: error instanceof Error ? error.message : 'Error connecting to server'
       });
     } finally {
@@ -127,6 +130,16 @@ const Dashboard = () => {
             <Typography color="text.secondary">No job triggered yet</Typography>
           )}
         </Paper>
+
+        {/* Only render TestResults if a jobId is available */}
+        {jobId && (
+          <Box sx={{ mt: 4 }}>
+            <Typography variant="h5" gutterBottom>
+              Test Results:
+            </Typography>
+            <TestResults jobId={jobId} /> {/* Pass the jobId to the TestResults component */}
+          </Box>
+        )}
       </Box>
     </Container>
   );

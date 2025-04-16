@@ -12,6 +12,8 @@ import logging
 from log_utils import init_logger
 
 init_logger()
+
+logger = logging.getLogger(__name__)
 app = Flask(__name__, static_folder="../client/build")
 CORS(app, resources={r"/api/*": {"origins": "*"}})
 service_factory = ServiceFactory()
@@ -57,27 +59,18 @@ class ClusterHandler(Resource):
 @api.route("/api/jenkins/trigger")
 class JenkinsTrigger(Resource):
     def post(self) -> Response:
-        try:
-            job_type = request.json["job_type"]
-            parameters = request.json["parameters"]
-            result = jenkins_submitter_service.trigger_job(job_type, parameters)
-            if isinstance(result, dict):
-                return jsonify(result)
-            else:
-                return jsonify({
-                    "success": False,
-                    "message": "Invalid response from Jenkins service"
-                })
-        except KeyError as e:
+        job_type = request.json["job_type"]
+        parameters = request.json["parameters"]
+        result = jenkins_submitter_service.trigger_job(job_type, parameters)
+        if isinstance(result, dict) and result.get("success"):
+            build_number = result.get("queue_number")
+            jenkins_submitter_service.create_execution_entry(job_type, build_number, parameters)
+            return jsonify(result)
+        else:
             return jsonify({
                 "success": False,
-                "message": f"Missing required field: {str(e)}"
-            }), 400
-        except Exception as e:
-            return jsonify({
-                "success": False,
-                "message": str(e)
-            }), 500
+                "message": "Invalid response from Jenkins service"
+            })
 
 
 @api.route("/api/jobs")
@@ -119,15 +112,16 @@ class ClustersList(Resource):
 @api.route("/api/jenkins/job-results/<job_id>")
 class JenkinsJobResults(Resource):
     def get(self, job_id: str) -> Response:
-        try:
-            result = jenkins_submitter_service.get_job_results(job_id)
-            return jsonify(result)
-        except Exception as e:
-            logger.error("Error fetching job results: %s", e)
-            return jsonify({
-                "success": False,
-                "message": str(e)
-            }), 500
+        result = jenkins_submitter_service.get_job_results(job_id)
+        logger.info("Jenkins job results: %s", result)
+        return jsonify(result)
+
+@api.route("/api/executions/recent")
+class RecentExecutions(Resource):
+    def get(self):
+        res = jenkins_submitter_service.get_recent_executions()
+        logger.info("Jenkins recent executions: %s", res)
+        return jsonify(res)
 
 
 if __name__ == "__main__":
