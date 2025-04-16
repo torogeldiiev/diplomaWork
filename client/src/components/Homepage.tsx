@@ -128,6 +128,10 @@ const Homepage = () => {
     }
   };
 
+  const handleCheckTestResults = (buildNumber: string) => {
+    setTriggeredJobId(buildNumber); // Set the triggeredJobId to the selected build number
+  };
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
@@ -235,25 +239,25 @@ const Homepage = () => {
                       <TableCell>Job Name</TableCell>
                       <TableCell>Status</TableCell>
                       <TableCell>Start Time</TableCell>
-                      <TableCell>End Time</TableCell>
+                      <TableCell>Actions</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {executions.map((execution) => (
-                      <React.Fragment key={execution.id}>
-                        <TableRow>
-                          <TableCell>{execution.jobName}</TableCell>
-                          <TableCell>{execution.status}</TableCell>
-                          <TableCell>{formatStartTime(execution.startTime)}</TableCell>
-                        </TableRow>
-                        {execution.buildNumber && execution.status === 'IN_PROGRESS' && (
-                          <TableRow>
-                            <TableCell colSpan={4}>
-                              <TestResults jobId={execution.buildNumber} />
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </React.Fragment>
+                      <TableRow key={execution.id}>
+                        <TableCell>{execution.jobName}</TableCell>
+                        <TableCell>{execution.status}</TableCell>
+                        <TableCell>{formatStartTime(execution.startTime)}</TableCell>
+                        <TableCell>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleCheckTestResults(execution.buildNumber)}
+                          >
+                            Check Test Results
+                          </Button>
+                        </TableCell>
+                      </TableRow>
                     ))}
                   </TableBody>
                 </Table>
@@ -261,7 +265,7 @@ const Homepage = () => {
             </Paper>
           </Grid>
 
-          {/* Add TestResults component when a job is triggered */}
+          {/* Render TestResults component for the selected job ID */}
           {triggeredJobId && (
             <Grid item xs={12}>
               <Paper elevation={3} sx={{ p: 3, mt: 4 }}>
