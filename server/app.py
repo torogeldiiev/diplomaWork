@@ -5,10 +5,11 @@ from flask import Flask
 from models.cluster import Cluster
 from service_factory import ServiceFactory
 from flask import Flask, Response, jsonify, request, send_from_directory
-from flask_restx import Api, Resource, Namespace, fields
-from config import FLASK_APP_DEBUG, JENKINS_PROJECT_NAMES
+from flask_restx import Api, Resource
+from config import FLASK_APP_DEBUG
 from flask_cors import CORS
 import logging
+import time
 from log_utils import init_logger
 
 init_logger()
@@ -62,9 +63,19 @@ class JenkinsTrigger(Resource):
         job_type = request.json["job_type"]
         parameters = request.json["parameters"]
         result = jenkins_submitter_service.trigger_job(job_type, parameters)
+        logger.info(f"Jenkins trigger result: {result}")
         if isinstance(result, dict) and result.get("success"):
-            build_number = result.get("queue_number")
-            jenkins_submitter_service.create_execution_entry(job_type, build_number, parameters)
+            build_number = result.get('data', {}).get('queue_number')
+            logger.info(f"Jenkins build number {build_number}")
+            job_type = result.get('data', {}).get('job_name')
+            created_execution = jenkins_submitter_service.create_execution_entry(job_type, build_number, parameters)
+
+            while True:
+                status = jenkins_submitter_service.get_job_status(job_type, build_number)
+                if status != "IN_PROGRESS":
+                    break
+                time.sleep(15)
+            jenkins_submitter_service.update_running_execution(created_execution, status)
             return jsonify(result)
         else:
             return jsonify({

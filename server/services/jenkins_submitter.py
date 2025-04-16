@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import logging
 import json
+
+import requests
 from jenkinsapi.jenkins import Jenkins, JenkinsAPIException
 from config import JENKINS_PROJECT_NAMES
 from db_utils import execution_utils
 from models.execution import Execution
+from requests.auth import HTTPBasicAuth
 
 logger = logging.getLogger(__name__)
 
@@ -37,25 +40,20 @@ class JenkinsSubmitter:
             job = self.jenkins_server[JENKINS_PROJECT_NAMES[job_type]]
             queue_item = job.invoke(build_params=parameters)
             logger.info("Jenkins job submitted: %s", queue_item)
-            
-            # Add debug logs
-            logger.debug("Queue item type: %s", type(queue_item))
-            logger.debug("Queue item string representation: %s", str(queue_item))
-            
-            try:
-                queue_number = str(queue_item).split('Queue #')[1]
-                logger.debug("Extracted queue number: %s", queue_number)
-            except Exception as e:
-                logger.error("Failed to extract queue number: %s", e)
-                queue_number = "unknown"
 
+            logger.info("Waiting for job to start building...")
+            build = queue_item.block_until_building()
+            logger.info("Blocking the build")
+            build_number = build.get_number()
+            logger.info("Build has started: #%s", build_number)
+            logger.info(f"JOB name: {JENKINS_PROJECT_NAMES.get(job_type)}")
             response_data = {
                 "success": True,
                 "message": "Job triggered successfully",
                 "data": {
-                    "job_name": JENKINS_PROJECT_NAMES[job_type],
+                    "job_name": JENKINS_PROJECT_NAMES.get(job_type),
                     "job_url": str(job.url),
-                    "queue_number": queue_number,
+                    "queue_number": build_number,
                     "status": "QUEUED"
                 }
             }
@@ -73,15 +71,33 @@ class JenkinsSubmitter:
             return execution_utils.create_execution_entry(session, job_type, build_number, parameters)
 
     def get_recent_executions(self):
+        # returns 10 latest executions
         with self.db_session_maker() as session:
             return execution_utils.get_recent_executions(session)
 
-    def get_job_status(self, build_number):
-        url = f"http://your-jenkins-url/job/your-job-name/{build_number}/api/json"
-        response = requests.get(url, auth=(JENKINS_USER, JENKINS_TOKEN))
-        if response.ok:
-            return response.json().get("result")  # e.g., SUCCESS, FAILURE, etc.
-        return "IN_PROGRESS"
+    def get_job_status(self, job_type, build_number):
+        url = f"{self.jenkins_url}/job/{job_type}/{build_number}/api/json"
+        logger.info(f"Job name: {job_type}")
+        try:
+            response = requests.get(url, auth=HTTPBasicAuth(self.user, self.password))
+            data = response.json()
+
+            result = data.get("result")
+
+            if result is None:
+                status = "IN_PROGRESS"
+            else:
+                status = result
+
+            return status
+
+        except requests.RequestException as e:
+            print(f"Error fetching job status from Jenkins: {e}")
+            return "IN_PROGRESS"
+
+    def update_running_execution(self, execution: Execution, new_status: str):
+        with self.db_session_maker() as session:
+            return execution_utils.update_running_execution(session, execution, new_status)
 
     def get_job_results(self, job_id: str):
         try:
