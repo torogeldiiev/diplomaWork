@@ -4,12 +4,9 @@ import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Homepage from './components/Homepage';
-import Dashboard from './components/Dashboard';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import TestResults from './components/TestResults';
 import theme from './styles/theme';
-
 
 const App: React.FC = () => {
   return (
@@ -25,7 +22,6 @@ const App: React.FC = () => {
           <Box component="main" sx={{ flexGrow: 1, py: 3 }}>
             <Routes>
               <Route path="/" element={<Homepage />} />
-              <Route path="/dashboard" element={<Dashboard />} />
             </Routes>
           </Box>
           <Footer />

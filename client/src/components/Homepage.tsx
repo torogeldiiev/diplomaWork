@@ -22,9 +22,8 @@ import {
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import TestResults from './TestResults';
-import { fetchRecentExecutions } from '../api/api';
+import { fetchJobs, fetchClusters, fetchRecentExecutions, triggerJob, fetchTestResults } from '../api/api';
 import { Execution, Job, Cluster } from '../types';
-
 
 const Homepage = () => {
   const navigate = useNavigate();
@@ -36,21 +35,18 @@ const Homepage = () => {
   const [loading, setLoading] = useState(true);
   const [triggerStatus, setTriggerStatus] = useState<{ success?: boolean; message?: string } | null>(null);
   const [triggeredJobId, setTriggeredJobId] = useState<string | null>(null);
+  const [isJobLoading, setIsJobLoading] = useState(false);
+  const [executionLoadingStates, setExecutionLoadingStates] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch jobs
-        const jobsResponse = await fetch('http://localhost:5000/api/jobs');
-        const jobsData = await jobsResponse.json();
+        const jobsData = await fetchJobs();
         setJobs(jobsData);
 
-        // Fetch clusters
-        const clustersResponse = await fetch('http://localhost:5000/api/clusters');
-        const clustersData = await clustersResponse.json();
+        const clustersData = await fetchClusters();
         setClusters(clustersData);
 
-        // Fetch executions
         const executionsData = await fetchRecentExecutions();
         setExecutions(executionsData);
       } catch (error) {
@@ -81,55 +77,56 @@ const Homepage = () => {
 
   const formatStartTime = (startTime: string): string => {
     console.log('Start Time:', startTime);
-  if (!startTime) {
-    return 'Empty';  // Return a fallback string when startTime is invalid
-  }
+    if (!startTime) {
+      return 'Empty';  // Return a fallback string when startTime is invalid
+    }
 
-  const formattedTime = startTime.split('.')[0] + startTime.slice(-6);
-  const date = new Date(formattedTime);
+    const formattedTime = startTime.split('.')[0] + startTime.slice(-6);
+    const date = new Date(formattedTime);
 
-  // Check if the date is valid
-  if (isNaN(date.getTime())) {
-    return 'Invalid Date';  // Return a fallback string when the date is invalid
-  }
+    // Check if the date is valid
+    if (isNaN(date.getTime())) {
+      return 'Invalid Date';  // Return a fallback string when the date is invalid
+    }
 
-  return date.toLocaleString();
-};
-
+    return date.toLocaleString();
+  };
 
   const handleTriggerJob = async () => {
+    setIsJobLoading(true);
+    setTriggerStatus(null);
     try {
-      console.log('Triggering job with params:', { job_type: selectedJob, parameters });
-      const response = await fetch('http://localhost:5000/api/jenkins/trigger', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          job_type: selectedJob,
-          parameters: parameters
-        }),
-      });
-      
-      const data = await response.json();
-      console.log('Response from server:', data);
-      
+      const data = await triggerJob(selectedJob, parameters);
       if (data.success) {
-        setTriggerStatus({ success: true, message: data.message });
-        setTriggeredJobId(data.data.queue_number);
-        const executionsData = await fetchRecentExecutions();
-        setExecutions(executionsData);
+        setTriggeredJobId(data.data.job_id);
+        setTriggerStatus({ success: true, message: 'Job triggered successfully!' });
       } else {
-        setTriggerStatus({ success: false, message: data.message || 'Failed to trigger job' });
+        throw new Error(data.message || 'Failed to trigger job');
       }
     } catch (error) {
       console.error('Error triggering job:', error);
-      setTriggerStatus({ success: false, message: 'Error connecting to server' });
+      setTriggerStatus({ success: false, message: error instanceof Error ? error.message : 'Error connecting to server' });
+    } finally {
+      setIsJobLoading(false);
     }
   };
 
-  const handleCheckTestResults = (buildNumber: string) => {
-    setTriggeredJobId(buildNumber); // Set the triggeredJobId to the selected build number
+  const handleCheckTestResults = async (jobId: string) => {
+    setExecutionLoadingStates(prev => ({ ...prev, [jobId]: true }));
+    try {
+      const data = await fetchTestResults(jobId);
+      if (data.success) {
+        setTriggeredJobId(jobId);
+        setTriggerStatus({ success: true, message: 'Test results fetched successfully!' });
+      } else {
+        throw new Error(data.data.status || 'Failed to fetch test results');
+      }
+    } catch (error) {
+      console.error('Error fetching test results:', error);
+      setTriggerStatus({ success: false, message: error instanceof Error ? error.message : 'Error connecting to server' });
+    } finally {
+      setExecutionLoadingStates(prev => ({ ...prev, [jobId]: false }));
+    }
   };
 
   if (loading) {
@@ -219,9 +216,13 @@ const Homepage = () => {
                 color="primary"
                 fullWidth
                 onClick={handleTriggerJob}
-                disabled={!selectedJob}
+                disabled={!selectedJob || isJobLoading}
               >
-                Trigger Job
+                {isJobLoading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  'Trigger Job'
+                )}
               </Button>
             </Paper>
           </Grid>
@@ -253,8 +254,13 @@ const Homepage = () => {
                             variant="contained"
                             color="primary"
                             onClick={() => handleCheckTestResults(execution.buildNumber)}
+                            disabled={executionLoadingStates[execution.buildNumber] || isJobLoading}
                           >
-                            Check Test Results
+                            {executionLoadingStates[execution.buildNumber] ? (
+                              <CircularProgress size={24} color="inherit" />
+                            ) : (
+                              'Check Test Results'
+                            )}
                           </Button>
                         </TableCell>
                       </TableRow>

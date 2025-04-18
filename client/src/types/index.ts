@@ -23,14 +23,14 @@ export interface Execution {
   parameters: Record<string, string>;
 }
 
-
 export interface Job {
   id: string;
   name: string;
   parameters: Record<string, string>;
 }
+
 export interface Cluster {
-  id: number;
+  id: string;
   name: string;
   release_version: string;
 }

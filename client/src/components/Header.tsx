@@ -27,7 +27,6 @@ const Header: React.FC = () => {
 
   const menuItems = [
     { text: 'Home', path: '/' },
-    { text: 'Dashboard', path: '/dashboard' },
   ];
 
   const drawer = (
