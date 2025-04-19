@@ -43,10 +43,27 @@ export const triggerJob = async (jobType: string, parameters: Record<string, str
   return response.json();
 };
 
-export const fetchTestResults = async (jobId: string): Promise<JobResult> => {
-  const response = await fetch(`http://localhost:5000/api/jenkins/job-results/${jobId}`);
+export const fetchTestResults = async (jobType: string, buildNumber: number) => {
+  const response = await fetch(`http://localhost:5000/api/jenkins/job-results/${jobType}/${buildNumber}`);
   if (!response.ok) {
     throw new Error("Failed to fetch test results");
   }
   return response.json();
 };
+
+
+export const fetchJobHistory = async (jobId: string, days: number) => {
+  const response = await fetch(`http://localhost:5000/api/job-history?jobId=${jobId}&days=${days}`);
+  if (!response.ok) {
+    throw new Error('Failed to fetch job history');
+  }
+
+  const data = await response.json();
+  if (!data.success) {
+    throw new Error(data.message || 'Unknown error');
+  }
+
+  return data.data;
+};
+
+

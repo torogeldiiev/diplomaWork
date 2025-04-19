@@ -6,6 +6,11 @@ export interface TestCase {
   errorStackTrace?: string;
 }
 
+export interface TestResultsProps {
+  jobType: string;
+  buildNumber: number;
+}
+
 export interface JobResult {
   success: boolean;
   data: {
@@ -33,4 +38,22 @@ export interface Cluster {
   id: string;
   name: string;
   release_version: string;
+}
+
+export interface JobHistoryData {
+  totalRuns: number;
+  successRate: number;
+  avgExecutionTime: number | null;
+  executions: JobExecutionSummary[];
+}
+
+
+export interface JobExecutionSummary {
+  id: number | string;
+  startTime: string;
+  status: string;
+  totalTests: number;
+  passed: number;
+  failed: number;
+  buildNumber: string | number;
 }

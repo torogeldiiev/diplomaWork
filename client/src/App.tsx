@@ -5,7 +5,6 @@ import CssBaseline from '@mui/material/CssBaseline';
 import Box from '@mui/material/Box';
 import Homepage from './components/Homepage';
 import Header from './components/Header';
-import Footer from './components/Footer';
 import theme from './styles/theme';
 
 const App: React.FC = () => {
@@ -24,7 +23,6 @@ const App: React.FC = () => {
               <Route path="/" element={<Homepage />} />
             </Routes>
           </Box>
-          <Footer />
         </Box>
       </Router>
     </ThemeProvider>

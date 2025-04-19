@@ -26,11 +26,6 @@ JENKINS_API_TOKEN = os.environ["JENKINS_API_TOKEN"]
 JENKINS_PSWRD=os.environ["JENKINS_PSWRD"]
 JENKINS_URL = os.environ["JENKINS_URL"]
 
-JENKINS_PROJECT_NAMES = {
-    "Configdiff": "cdpd-trigger-confdiff-test",
-    "Platform": "cdpd-trigger-platform-tests"
-}
-
 log_level_str = os.environ["LOG_LEVEL"]
 LOG_LEVEL = {
     "DEBUG": logging.DEBUG,

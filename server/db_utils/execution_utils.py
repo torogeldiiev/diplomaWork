@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+from typing import List
+
 import requests
 from requests.auth import HTTPBasicAuth
 from sqlalchemy.orm import Session
@@ -41,3 +43,22 @@ def update_running_execution(db_session: Session, execution: Execution, new_stat
     else:
         logger.info("No update needed for execution %s; status is already %s", execution.id, execution.status)
     return execution
+
+
+def get_executions_by_job(session, job_name: str):
+    return session.query(Execution).filter(Execution.job_name == job_name).all()
+
+
+def get_executions_by_job_in_time_range(session: Session, job_name: str, cutoff_date: datetime) -> List[Execution]:
+    """
+    Retrieves executions for a specific job name that started on or after the given cutoff datetime.
+    """
+    return (
+        session.query(Execution)
+        .filter(
+            Execution.job_name == job_name,
+            Execution.start_time >= cutoff_date
+        )
+        .order_by(Execution.start_time.desc())
+        .all()
+    )

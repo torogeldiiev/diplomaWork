@@ -1,27 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Container,
-  Typography,
-  Button,
-  Box,
-  Paper,
-  Grid,
-  TextField,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
-  CircularProgress,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Alert,
+import {Container, Typography, Button, Box, Paper, Grid, TextField, Select, MenuItem, FormControl, InputLabel,
+  CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import TestResults from './TestResults';
+import JobHistory from './JobHistory';
 import { fetchJobs, fetchClusters, fetchRecentExecutions, triggerJob, fetchTestResults } from '../api/api';
 import { Execution, Job, Cluster } from '../types';
 
@@ -34,9 +17,11 @@ const Homepage = () => {
   const [executions, setExecutions] = useState<Execution[]>([]);
   const [loading, setLoading] = useState(true);
   const [triggerStatus, setTriggerStatus] = useState<{ success?: boolean; message?: string } | null>(null);
-  const [triggeredJobId, setTriggeredJobId] = useState<string | null>(null);
+  const [triggeredExecution, setTriggeredExecution] = useState<Execution | null>(null);
   const [isJobLoading, setIsJobLoading] = useState(false);
   const [executionLoadingStates, setExecutionLoadingStates] = useState<{ [key: string]: boolean }>({});
+  const [jobStats, setJobStats] = useState<null | { totalRuns: number; successRate: number; avgExecutionTime: number }>(null);
+  const [selectedStatsJob, setSelectedStatsJob] = useState<string>('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,14 +44,15 @@ const Homepage = () => {
     fetchData();
   }, []);
 
-  const handleJobSelect = (jobId: string) => {
-    setSelectedJob(jobId);
-    const job = jobs.find(j => j.id === jobId);
+  const handleJobSelect = (jobName: string) => {
+    setSelectedJob(jobName);
+    const job = jobs.find(j => j.name === jobName);
     if (job) {
       setParameters(job.parameters);
     }
     setTriggerStatus(null);
-  };
+  }
+
 
   const handleParameterChange = (paramName: string, value: string) => {
     setParameters(prev => ({
@@ -98,7 +84,10 @@ const Homepage = () => {
     try {
       const data = await triggerJob(selectedJob, parameters);
       if (data.success) {
-        setTriggeredJobId(data.data.job_id);
+        setTriggeredExecution({id: Date.now(),  jobName: selectedJob, status: 'QUEUED', buildNumber: data.data.queue_number.toString(),
+        startTime: new Date().toISOString(),
+        parameters: parameters
+      });
         setTriggerStatus({ success: true, message: 'Job triggered successfully!' });
       } else {
         throw new Error(data.message || 'Failed to trigger job');
@@ -111,12 +100,15 @@ const Homepage = () => {
     }
   };
 
-  const handleCheckTestResults = async (jobId: string) => {
-    setExecutionLoadingStates(prev => ({ ...prev, [jobId]: true }));
+  const handleCheckTestResults = async (buildNumber: string) => {
+    setExecutionLoadingStates(prev => ({ ...prev, [buildNumber]: true }));
     try {
-      const data = await fetchTestResults(jobId);
+      const exec = executions.find(e => e.buildNumber === buildNumber);
+      if (!exec) throw new Error("Execution not found");
+
+      const data = await fetchTestResults(exec.jobName, Number(exec.buildNumber));
       if (data.success) {
-        setTriggeredJobId(jobId);
+        setTriggeredExecution(exec); // ✅ Store the whole execution
         setTriggerStatus({ success: true, message: 'Test results fetched successfully!' });
       } else {
         throw new Error(data.data.status || 'Failed to fetch test results');
@@ -125,9 +117,10 @@ const Homepage = () => {
       console.error('Error fetching test results:', error);
       setTriggerStatus({ success: false, message: error instanceof Error ? error.message : 'Error connecting to server' });
     } finally {
-      setExecutionLoadingStates(prev => ({ ...prev, [jobId]: false }));
+      setExecutionLoadingStates(prev => ({ ...prev, [buildNumber]: false }));
     }
   };
+
 
   if (loading) {
     return (
@@ -169,7 +162,7 @@ const Homepage = () => {
                   onChange={(e) => handleJobSelect(e.target.value)}
                 >
                   {jobs.map((job) => (
-                    <MenuItem key={job.id} value={job.id}>
+                    <MenuItem key={job.name} value={job.name}>
                       {job.name}
                     </MenuItem>
                   ))}
@@ -226,7 +219,9 @@ const Homepage = () => {
               </Button>
             </Paper>
           </Grid>
-
+          <Grid item xs={12} md={6}>
+            <JobHistory />
+          </Grid>
           {/* Execution Monitoring Section */}
           <Grid item xs={12}>
             <Paper elevation={3} sx={{ p: 3 }}>
@@ -272,13 +267,16 @@ const Homepage = () => {
           </Grid>
 
           {/* Render TestResults component for the selected job ID */}
-          {triggeredJobId && (
+          {triggeredExecution && (
             <Grid item xs={12}>
               <Paper elevation={3} sx={{ p: 3, mt: 4 }}>
                 <Typography variant="h6" gutterBottom>
                   Test Results
                 </Typography>
-                <TestResults jobId={triggeredJobId} />
+                <TestResults
+                  jobType={triggeredExecution.jobName}
+                  buildNumber={Number(triggeredExecution.buildNumber)}
+                />
               </Paper>
             </Grid>
           )}

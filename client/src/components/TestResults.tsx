@@ -1,25 +1,20 @@
-// components/TestResults.tsx
 import React, { useEffect, useState } from 'react';
 import { Box, Typography } from '@mui/material';
 import TestResultTable from './TestResultTable';
 import LoadingIndicator from './LoadingIndicator';
 import ErrorDisplay from './ErrorDisplay';
 import { fetchTestResults } from '../api/api';
-import { JobResult, TestCase } from '../types';
+import { JobResult, TestCase, TestResultsProps } from '../types';
 
-interface TestResultsProps {
-  jobId: string;
-}
-
-const TestResults: React.FC<TestResultsProps> = ({ jobId }) => {
+const TestResults: React.FC<TestResultsProps> = ({ jobType, buildNumber }) => {
   const [results, setResults] = useState<TestCase[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchResults = async () => {
       try {
-        const data: JobResult = await fetchTestResults(jobId);
+        const data: JobResult = await fetchTestResults(jobType, buildNumber);
         if (data.success) {
           setResults(data.data.test_cases);
         } else {
@@ -36,15 +31,10 @@ const TestResults: React.FC<TestResultsProps> = ({ jobId }) => {
 
     const interval = setInterval(fetchResults, 30000);
     return () => clearInterval(interval);
-  }, [jobId]);
+  }, [jobType, buildNumber]);
 
-  if (loading) {
-    return <LoadingIndicator />;
-  }
-
-  if (error) {
-    return <ErrorDisplay message={error} />;
-  }
+  if (loading) return <LoadingIndicator />;
+  if (error) return <ErrorDisplay message={error} />;
 
   return (
     <Box>

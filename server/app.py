@@ -89,7 +89,6 @@ class JobsList(Resource):
     def get(self) -> Response:
         jobs = [
             {
-                "id": "Configdiff",
                 "name": "cdpd-trigger-confdiff-test",
                 "parameters": {
                     "source": "",
@@ -99,7 +98,6 @@ class JobsList(Resource):
                 }
             },
             {
-                "id": "Platform",
                 "name": "cdpd-trigger-platform-tests",
                 "parameters": {
                     "source": "",
@@ -120,12 +118,13 @@ class ClustersList(Resource):
         return jsonify(clusters)
 
 
-@api.route("/api/jenkins/job-results/<job_id>")
+@api.route("/api/jenkins/job-results/<string:job_type>/<int:build_number>")
 class JenkinsJobResults(Resource):
-    def get(self, job_id: str) -> Response:
-        result = jenkins_submitter_service.get_job_results(job_id)
+    def get(self, job_type: str, build_number: int) -> Response:
+        result = jenkins_submitter_service.get_test_results_for_build(job_type, build_number)
         logger.info("Jenkins job results: %s", result)
         return jsonify(result)
+
 
 @api.route("/api/executions/recent")
 class RecentExecutions(Resource):
@@ -133,6 +132,18 @@ class RecentExecutions(Resource):
         res = jenkins_submitter_service.get_recent_executions()
         logger.info("Jenkins recent executions: %s", res)
         return jsonify(res)
+# backend route (example)
+@app.route('/api/job-history', methods=['GET'])
+def job_history():
+    job_name = request.args.get('jobId')
+    days = int(request.args.get('days', 7))
+    if not job_name:
+        return jsonify(success=False, message="Missing jobId"), 400
+
+    stats = jenkins_submitter_service.get_job_statistics(job_name, days)
+    return jsonify(stats)
+
+
 
 
 if __name__ == "__main__":
