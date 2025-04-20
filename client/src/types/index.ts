@@ -56,4 +56,5 @@ export interface JobExecutionSummary {
   passed: number;
   failed: number;
   buildNumber: string | number;
+  parameters: Record<string,string>;
 }

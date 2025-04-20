@@ -6,7 +6,6 @@ Making sure connection is created only once and can be imported to needed module
 from sqlalchemy import create_engine, MetaData
 from sqlalchemy.orm import sessionmaker
 import logging
-
 from config import DATABASE_URL
 from models.base import Base
 

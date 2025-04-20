@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import {Container, Typography, Button, Box, Paper, Grid, TextField, Select, MenuItem, FormControl, InputLabel,
-  CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert,
+import {Container, Typography, Box, Paper, Grid, CircularProgress
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import TestResults from './TestResults';
 import JobHistory from './JobHistory';
+import JobTrigger from './JobTrigger';
+import RecentExecutions from './RecentExecutions';
 import { fetchJobs, fetchClusters, fetchRecentExecutions, triggerJob, fetchTestResults } from '../api/api';
 import { Execution, Job, Cluster } from '../types';
 
@@ -20,8 +21,6 @@ const Homepage = () => {
   const [triggeredExecution, setTriggeredExecution] = useState<Execution | null>(null);
   const [isJobLoading, setIsJobLoading] = useState(false);
   const [executionLoadingStates, setExecutionLoadingStates] = useState<{ [key: string]: boolean }>({});
-  const [jobStats, setJobStats] = useState<null | { totalRuns: number; successRate: number; avgExecutionTime: number }>(null);
-  const [selectedStatsJob, setSelectedStatsJob] = useState<string>('');
 
   useEffect(() => {
     const fetchData = async () => {
@@ -140,130 +139,14 @@ const Homepage = () => {
         <Grid container spacing={4}>
           {/* Job Triggering Section */}
           <Grid item xs={12} md={6}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Trigger Job
-              </Typography>
-              
-              {triggerStatus && (
-                <Alert 
-                  severity={triggerStatus.success ? "success" : "error"} 
-                  sx={{ mb: 2 }}
-                >
-                  {triggerStatus.message}
-                </Alert>
-              )}
-
-              <FormControl fullWidth sx={{ mb: 2 }}>
-                <InputLabel>Select Job</InputLabel>
-                <Select
-                  value={selectedJob}
-                  label="Select Job"
-                  onChange={(e) => handleJobSelect(e.target.value)}
-                >
-                  {jobs.map((job) => (
-                    <MenuItem key={job.name} value={job.name}>
-                      {job.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-
-              {selectedJob && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="subtitle1" gutterBottom>
-                    Job Parameters:
-                  </Typography>
-                  {Object.entries(parameters).map(([key, value]) => (
-                    key === 'source' || key === 'target' ? (
-                      <FormControl key={key} fullWidth sx={{ mb: 1 }}>
-                        <InputLabel>{key}</InputLabel>
-                        <Select
-                          value={value}
-                          label={key}
-                          onChange={(e) => handleParameterChange(key, e.target.value)}
-                        >
-                          {clusters.map((cluster) => (
-                            <MenuItem key={cluster.id} value={cluster.name}>
-                              {cluster.name} ({cluster.release_version})
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    ) : (
-                      <TextField
-                        key={key}
-                        fullWidth
-                        label={key}
-                        value={value}
-                        onChange={(e) => handleParameterChange(key, e.target.value)}
-                        sx={{ mb: 1 }}
-                      />
-                    )
-                  ))}
-                </Box>
-              )}
-
-              <Button
-                variant="contained"
-                color="primary"
-                fullWidth
-                onClick={handleTriggerJob}
-                disabled={!selectedJob || isJobLoading}
-              >
-                {isJobLoading ? (
-                  <CircularProgress size={24} color="inherit" />
-                ) : (
-                  'Trigger Job'
-                )}
-              </Button>
-            </Paper>
+            <JobTrigger onJobTriggered={exec => setTriggeredExecution(exec)} />
           </Grid>
           <Grid item xs={12} md={6}>
             <JobHistory />
           </Grid>
           {/* Execution Monitoring Section */}
           <Grid item xs={12}>
-            <Paper elevation={3} sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Recent Executions
-              </Typography>
-              <TableContainer>
-                <Table>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Job Name</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>Start Time</TableCell>
-                      <TableCell>Actions</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {executions.map((execution) => (
-                      <TableRow key={execution.id}>
-                        <TableCell>{execution.jobName}</TableCell>
-                        <TableCell>{execution.status}</TableCell>
-                        <TableCell>{formatStartTime(execution.startTime)}</TableCell>
-                        <TableCell>
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => handleCheckTestResults(execution.buildNumber)}
-                            disabled={executionLoadingStates[execution.buildNumber] || isJobLoading}
-                          >
-                            {executionLoadingStates[execution.buildNumber] ? (
-                              <CircularProgress size={24} color="inherit" />
-                            ) : (
-                              'Check Test Results'
-                            )}
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
+            <RecentExecutions onSelectExecution={exec => setTriggeredExecution(exec)} />
           </Grid>
 
           {/* Render TestResults component for the selected job ID */}

@@ -11,6 +11,7 @@ class Cluster(Base):
     release_version = Column(String, nullable=False)
 
     configs = relationship("Config", back_populates="cluster", cascade="all, delete-orphan")
+    platforms = relationship("Platform", back_populates="cluster", cascade="all, delete-orphan")
 
     def as_dict(self):
         return {

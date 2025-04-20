@@ -9,6 +9,7 @@ from jenkinsapi.jenkins import Jenkins, JenkinsAPIException
 from db_utils import execution_utils
 from models.execution import Execution
 from requests.auth import HTTPBasicAuth
+import xml.etree.ElementTree as ET
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +167,6 @@ class JenkinsSubmitter:
                     total_time += duration
                     time_count += 1
 
-                # Load test result summary from report.json
                 test_result = self.get_test_results_for_build(job_type, e.build_number)
                 test_cases = test_result.get('data', {}).get('test_cases', []) if test_result.get('success') else []
 
@@ -180,7 +180,8 @@ class JenkinsSubmitter:
                     "totalTests": len(test_cases),
                     "passed": passed,
                     "failed": failed,
-                    "buildNumber": e.build_number
+                    "buildNumber": e.build_number,
+                    "parameters": e.parameters
                 })
 
             success_rate = (success_count / total_runs) * 100
@@ -196,3 +197,31 @@ class JenkinsSubmitter:
                 }
             }
 
+    def list_jobs_with_parameters(self) -> list[dict]:
+        jobs_list = []
+        for name, _url in self.jenkins_server.get_jobs():
+            job = self.jenkins_server[name]
+            config_xml = job.get_config()
+            root = ET.fromstring(config_xml)
+            param_map: dict[str, str] = {}
+            for pd in root.findall(
+                    ".//hudson.model.ParametersDefinitionProperty/parameterDefinitions/*"
+            ):
+                p_name = pd.findtext("name", default="")
+                if pd.tag.endswith("StringParameterDefinition"):
+                    default = pd.findtext("defaultValue", default="")
+                elif pd.tag.endswith("ChoiceParameterDefinition"):
+                    choices_el = pd.find("choices")
+                    if choices_el is not None and choices_el.findall("string"):
+                        default = choices_el.findall("string")[0].text or ""
+                    else:
+                        default = ""
+                else:
+                    default = pd.findtext("defaultValue", default="")
+                param_map[p_name] = default
+
+            jobs_list.append({
+                "name": name,
+                "parameters": param_map
+            })
+        return jobs_list

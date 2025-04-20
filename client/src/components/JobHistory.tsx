@@ -1,23 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Paper,
-  Typography,
-  CircularProgress,
-  Box,
-  FormControl,
-  Select,
-  MenuItem,
-  InputLabel,
-  Alert,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  TableContainer,
-  Button,
-} from '@mui/material';
-import { fetchJobHistory, fetchJobs, fetchTestResults } from '../api/api';
+import {Paper, Typography, CircularProgress, Box, FormControl, Select, MenuItem, InputLabel, Alert, Table,
+  TableHead, TableRow, TableCell, TableBody, TableContainer, Button}
+  from '@mui/material';
+import {fetchJobHistory, fetchJobs, fetchTestResults, triggerJob} from '../api/api';
 import { Job, JobHistoryData } from '../types';
 
 const JobHistory = () => {
@@ -75,6 +60,23 @@ const JobHistory = () => {
     }
   };
 
+  const handleRestartJob = async (jobName: string, parameters: Record<string,string>, executionId: string) => {
+   setExecutionLoadingStates(prev => ({ ...prev, [executionId]: true }));
+   try {
+     const res = await triggerJob(jobName, parameters);
+     if (res.success) {
+      // Optionally refetch history or optimistically update UI
+       alert("Restart triggered!");
+     } else {
+       alert("Restart failed: " + res.message);
+     }
+   } catch (err) {
+     console.error("Restart error", err);
+     alert("Error restarting job");
+   } finally {
+     setExecutionLoadingStates(prev => ({ ...prev, [executionId]: false }));
+   }
+ };
 
   useEffect(() => {
     if (selectedJob) {
@@ -187,6 +189,14 @@ const JobHistory = () => {
                         ) : (
                           'Check Test Results'
                         )}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        color="secondary"
+                        onClick={() => handleRestartJob(selectedJob, exec.parameters, exec.id.toString())}
+                        disabled={executionLoadingStates[exec.id.toString()]}
+                      >
+                        Restart
                       </Button>
                     </TableCell>
                   </TableRow>

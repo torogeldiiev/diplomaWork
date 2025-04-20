@@ -4,13 +4,16 @@ import os
 # Add the server directory to the sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'server')))
 
-# Now import your models and database handler
 from models.cluster import Cluster
 from models.config import Config
+from models.platform import Platform
 from database_handler import db_session_maker
+
 session = db_session_maker()
 
 print("sTARTINg")
+
+
 def database_is_empty():
     return session.query(Cluster).count() == 0
 
@@ -34,18 +37,14 @@ def populate_db():
         session.rollback()
         print(f"Error populating the database: {e}")
 
-    # Get cluster IDs after commit
     cluster_a_id, cluster_b_id = cluster_a.id, cluster_b.id
 
-    # Define configuration data
     configs = [
-        # Metadata
         Config(cluster_id=cluster_a_id, config_type="environment", config_value="production"),
         Config(cluster_id=cluster_b_id, config_type="environment", config_value="staging"),
         Config(cluster_id=cluster_a_id, config_type="region", config_value="us-east-1"),
         Config(cluster_id=cluster_b_id, config_type="region", config_value="eu-central-1"),
 
-        # Node Configuration
         Config(cluster_id=cluster_a_id, config_type="node_count", config_value="10"),
         Config(cluster_id=cluster_b_id, config_type="node_count", config_value="8"),
         Config(cluster_id=cluster_a_id, config_type="node_types", config_value="m5.large,r6g.xlarge"),
@@ -100,5 +99,6 @@ def populate_db():
         session.rollback()
         print(f"Error populating the database: {e}")
     print("Database populated successfully!")
+
 
 populate_db()

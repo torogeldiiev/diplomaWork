@@ -87,26 +87,7 @@ class JenkinsTrigger(Resource):
 @api.route("/api/jobs")
 class JobsList(Resource):
     def get(self) -> Response:
-        jobs = [
-            {
-                "name": "cdpd-trigger-confdiff-test",
-                "parameters": {
-                    "source": "",
-                    "target": "",
-                    "dry_run": "true",
-                    "launch_multiplier": "1"
-                }
-            },
-            {
-                "name": "cdpd-trigger-platform-tests",
-                "parameters": {
-                    "source": "",
-                    "target": "",
-                    "dry_run": "true",
-                    "launch_multiplier": "1"
-                }
-            }
-        ]
+        jobs = jenkins_submitter_service.list_jobs_with_parameters()
         return jsonify(jobs)
 
 
@@ -132,7 +113,8 @@ class RecentExecutions(Resource):
         res = jenkins_submitter_service.get_recent_executions()
         logger.info("Jenkins recent executions: %s", res)
         return jsonify(res)
-# backend route (example)
+
+
 @app.route('/api/job-history', methods=['GET'])
 def job_history():
     job_name = request.args.get('jobId')
@@ -142,7 +124,6 @@ def job_history():
 
     stats = jenkins_submitter_service.get_job_statistics(job_name, days)
     return jsonify(stats)
-
 
 
 
