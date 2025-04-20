@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import List
+from typing import List, Optional
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -45,8 +45,8 @@ def update_running_execution(db_session: Session, execution: Execution, new_stat
     return execution
 
 
-def get_executions_by_job(session, job_name: str):
-    return session.query(Execution).filter(Execution.job_name == job_name).all()
+def get_execution_by_build_number(db_session: Session, build_number: int):
+    return db_session.query(Execution).filter(Execution.build_number == build_number).first()
 
 
 def get_executions_by_job_in_time_range(session: Session, job_name: str, cutoff_date: datetime) -> List[Execution]:

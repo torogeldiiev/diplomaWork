@@ -1,7 +1,4 @@
 import os
-
-from flask import Flask
-
 from models.cluster import Cluster
 from service_factory import ServiceFactory
 from flask import Flask, Response, jsonify, request, send_from_directory
@@ -9,9 +6,8 @@ from flask_restx import Api, Resource
 from config import FLASK_APP_DEBUG
 from flask_cors import CORS
 import logging
-import time
 from log_utils import init_logger
-
+from scheduler import Scheduler
 init_logger()
 
 logger = logging.getLogger(__name__)
@@ -20,7 +16,9 @@ CORS(app, resources={r"/api/*": {"origins": "*"}})
 service_factory = ServiceFactory()
 cluster_handler_service = service_factory.get_clusters_handler_service()
 jenkins_submitter_service = service_factory.get_jenkins_submitter_service()
-
+jenkins_checker_service = service_factory.get_jenkins_checker_service()
+scheduler = Scheduler()
+scheduler.start()
 api = Api(app, version="1.0", title="Backend API", doc="/api/docs")
 
 
@@ -63,31 +61,18 @@ class JenkinsTrigger(Resource):
         job_type = request.json["job_type"]
         parameters = request.json["parameters"]
         result = jenkins_submitter_service.trigger_job(job_type, parameters)
-        logger.info(f"Jenkins trigger result: {result}")
-        if isinstance(result, dict) and result.get("success"):
-            build_number = result.get('data', {}).get('queue_number')
-            logger.info(f"Jenkins build number {build_number}")
-            job_type = result.get('data', {}).get('job_name')
-            created_execution = jenkins_submitter_service.create_execution_entry(job_type, build_number, parameters)
-
-            while True:
-                status = jenkins_submitter_service.get_job_status(job_type, build_number)
-                if status != "IN_PROGRESS":
-                    break
-                time.sleep(15)
-            jenkins_submitter_service.update_running_execution(created_execution, status)
-            return jsonify(result)
-        else:
-            return jsonify({
-                "success": False,
-                "message": "Invalid response from Jenkins service"
-            })
+        build_number = result.get('data', {}).get('queue_number')
+        job_type = result.get('data', {}).get('job_name')
+        execution = jenkins_submitter_service.create_execution_entry(job_type, build_number, parameters)
+        updater = service_factory.get_jenkins_updater(job_type, build_number)
+        scheduler.schedule(updater, seconds=15)
+        return jsonify(result)
 
 
 @api.route("/api/jobs")
 class JobsList(Resource):
     def get(self) -> Response:
-        jobs = jenkins_submitter_service.list_jobs_with_parameters()
+        jobs = jenkins_checker_service.list_jobs_with_parameters()
         return jsonify(jobs)
 
 
@@ -102,7 +87,7 @@ class ClustersList(Resource):
 @api.route("/api/jenkins/job-results/<string:job_type>/<int:build_number>")
 class JenkinsJobResults(Resource):
     def get(self, job_type: str, build_number: int) -> Response:
-        result = jenkins_submitter_service.get_test_results_for_build(job_type, build_number)
+        result = jenkins_checker_service.get_test_results_for_build(job_type, build_number)
         logger.info("Jenkins job results: %s", result)
         return jsonify(result)
 
@@ -110,7 +95,7 @@ class JenkinsJobResults(Resource):
 @api.route("/api/executions/recent")
 class RecentExecutions(Resource):
     def get(self):
-        res = jenkins_submitter_service.get_recent_executions()
+        res = jenkins_checker_service.get_recent_executions()
         logger.info("Jenkins recent executions: %s", res)
         return jsonify(res)
 
@@ -122,9 +107,8 @@ def job_history():
     if not job_name:
         return jsonify(success=False, message="Missing jobId"), 400
 
-    stats = jenkins_submitter_service.get_job_statistics(job_name, days)
+    stats = jenkins_checker_service.get_job_statistics(job_name, days)
     return jsonify(stats)
-
 
 
 if __name__ == "__main__":

@@ -26,6 +26,10 @@ JENKINS_API_TOKEN = os.environ["JENKINS_API_TOKEN"]
 JENKINS_PSWRD=os.environ["JENKINS_PSWRD"]
 JENKINS_URL = os.environ["JENKINS_URL"]
 
+EMAIL_USER = os.getenv("EMAIL_USER")
+EMAIL_PASS = os.getenv("EMAIL_PASS")
+NOTIFY_TO = os.getenv("NOTIFY_TO")
+
 log_level_str = os.environ["LOG_LEVEL"]
 LOG_LEVEL = {
     "DEBUG": logging.DEBUG,
