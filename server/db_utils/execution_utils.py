@@ -1,16 +1,13 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Optional
-
-import requests
-from requests.auth import HTTPBasicAuth
+from typing import List
 from sqlalchemy.orm import Session
 from datetime import datetime
-
 from models.execution import Execution
 
 logger = logging.getLogger(__name__)
+
 
 def create_execution_entry(db_session: Session, job_name: str, build_number: str, parameters: dict) -> Execution:
     execution = Execution(

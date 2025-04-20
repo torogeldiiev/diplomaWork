@@ -1,4 +1,3 @@
-// src/components/JobTrigger.tsx
 import React, { useState, useEffect } from 'react';
 import {Paper, Typography, Box, FormControl, InputLabel, Select, MenuItem, TextField, Button, CircularProgress, Alert,
 } from '@mui/material';

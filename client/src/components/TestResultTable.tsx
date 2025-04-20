@@ -1,15 +1,5 @@
-// components/TestResultTable.tsx
 import React from 'react';
-import {
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
-  Typography,
+import {Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip, Typography,
 } from '@mui/material';
 import { TestCase } from '../types';
 

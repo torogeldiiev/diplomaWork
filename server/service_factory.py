@@ -5,7 +5,6 @@ from services.jenkins_checker import JenkinsChecker
 from services.jenkins_updater import JenkinsUpdater
 from config import JENKINS_URL, JENKINS_USER, JENKINS_PSWRD
 from jenkins_client import JenkinsClient
-from models.execution import Execution
 
 
 class ServiceFactory:

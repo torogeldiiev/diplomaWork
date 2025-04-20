@@ -8,7 +8,7 @@ import { Job, JobHistoryData } from '../types';
 const JobHistory = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState('');
-  const [selectedDays, setSelectedDays] = useState(7); // Default to last 7 days
+  const [selectedDays, setSelectedDays] = useState(7);
   const [history, setHistory] = useState<JobHistoryData | null>(null);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -49,10 +49,9 @@ const JobHistory = () => {
       const exec = history?.executions.find(e => e.id.toString() === executionId);
       if (!exec) return;
 
-      const data = await fetchTestResults(selectedJob, Number(exec.buildNumber)); // ✅ Store result
+      const data = await fetchTestResults(selectedJob, Number(exec.buildNumber));
       console.log('Test results:', data);
 
-    // You can redirect, show modal, or pass `data.data.test_cases` to a TestResult component
     } catch (error) {
       console.error('Failed to fetch test results', error);
     } finally {
@@ -65,7 +64,6 @@ const JobHistory = () => {
    try {
      const res = await triggerJob(jobName, parameters);
      if (res.success) {
-      // Optionally refetch history or optimistically update UI
        alert("Restart triggered!");
      } else {
        alert("Restart failed: " + res.message);

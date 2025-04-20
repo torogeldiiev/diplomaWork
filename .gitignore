@@ -10,16 +10,13 @@ node_modules/
 **/package-lock.json
 *.log
 
-# IDEs and editors
 .idea/
 .vscode/
 .DS_Store
 
-# Build
 **/build/
 dist/
 
-# Default React assets
 **/public/logo*.png
 
 configs/local.env

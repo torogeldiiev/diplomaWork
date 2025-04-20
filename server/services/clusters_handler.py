@@ -15,7 +15,7 @@ class ClustersHandler:
         with self.db_session_maker() as session:
             return cluster_utils.add_cluster(session, cluster)
 
-    def delete_cluster(self, cluster_id: int) :
+    def delete_cluster(self, cluster_id: int):
         with self.db_session_maker() as session:
             return cluster_utils.delete_cluster(session, cluster_id)
 

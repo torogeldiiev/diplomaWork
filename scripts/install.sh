@@ -33,7 +33,6 @@ if [ ! -f package.json ]; then
     rm package-lock.json
   fi
 
-  # Create React app using npx (without create-react-app since it's deprecated)
   npx create-react-app@latest .
 else
   echo "React app already exists, skipping creation."

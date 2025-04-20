@@ -1,18 +1,6 @@
-// src/components/RecentExecutions.tsx
 import React, { useEffect, useState } from 'react';
-import {
-  Paper,
-  Typography,
-  Box,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
-  TableContainer,
-  Button,
-  CircularProgress
-} from '@mui/material';
+import {Paper, Typography, Box, Table, TableHead, TableRow, TableCell, TableBody, TableContainer, Button,
+  CircularProgress} from '@mui/material';
 import { fetchRecentExecutions, fetchTestResults, triggerJob } from '../api/api';
 import { Execution } from '../types';
 
@@ -39,7 +27,6 @@ const RecentExecutions: React.FC<RecentExecutionsProps> = ({ onSelectExecution }
     };
 
     load();
-    // you could also poll periodically here if desired
   }, []);
 
   const handleCheck = async (exec: Execution) => {
@@ -63,7 +50,6 @@ const RecentExecutions: React.FC<RecentExecutionsProps> = ({ onSelectExecution }
     try {
       const res = await triggerJob(exec.jobName, exec.parameters);
       console.log('Restart result', res);
-      // Optionally: refresh the list
     } catch (err) {
       console.error('Error restarting job', err);
     } finally {

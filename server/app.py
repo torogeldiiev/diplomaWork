@@ -1,13 +1,14 @@
 import os
+import logging
 from models.cluster import Cluster
 from service_factory import ServiceFactory
 from flask import Flask, Response, jsonify, request, send_from_directory
 from flask_restx import Api, Resource
 from config import FLASK_APP_DEBUG
 from flask_cors import CORS
-import logging
 from log_utils import init_logger
 from scheduler import Scheduler
+
 init_logger()
 
 logger = logging.getLogger(__name__)

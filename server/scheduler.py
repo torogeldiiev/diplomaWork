@@ -3,7 +3,6 @@ import logging
 import sched
 import threading
 import time
-import traceback
 
 logger = logging.getLogger(__name__)
 

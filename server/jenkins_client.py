@@ -5,6 +5,7 @@ from requests.auth import HTTPBasicAuth
 
 logger = logging.getLogger(__name__)
 
+
 class JenkinsClient:
     def __init__(self, url: str, user: str, token: str):
         self.url = url
@@ -48,4 +49,3 @@ class JenkinsClient:
 
     def get_job(self, name: str):
         return self._jenkins[name]
-

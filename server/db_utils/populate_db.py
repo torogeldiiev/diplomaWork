@@ -1,3 +1,4 @@
+"""Populate database with dummy data that we will use in out tests that Jenkins starts"""
 import sys
 import os
 
