@@ -3,7 +3,6 @@ export interface TestCase {
   status: 'PASSED' | 'FAILED';
   duration: number;
   errorDetails?: string;
-  errorStackTrace?: string;
 }
 
 export interface TestResultsProps {
@@ -13,10 +12,8 @@ export interface TestResultsProps {
 
 export interface JobResult {
   success: boolean;
-  data: {
-    status: string;
-    test_cases: TestCase[];
-  };
+  data: TestCase[];
+  message: string;
 }
 
 export interface Execution {

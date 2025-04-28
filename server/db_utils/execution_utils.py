@@ -5,6 +5,7 @@ from typing import List
 from sqlalchemy.orm import Session
 from datetime import datetime
 from models.execution import Execution
+from models.test_results import TestResult
 
 logger = logging.getLogger(__name__)
 
@@ -43,15 +44,15 @@ def update_running_execution(db_session: Session, execution: Execution, new_stat
 
 
 def get_execution_by_build_number(db_session: Session, build_number: int):
-    return db_session.query(Execution).filter(Execution.build_number == build_number).first()
+    return db_session.query(Execution).filter(Execution.build_number==build_number).first()
 
 
-def get_executions_by_job_in_time_range(session: Session, job_name: str, cutoff_date: datetime) -> List[Execution]:
+def get_executions_by_job_in_time_range(db_session: Session, job_name: str, cutoff_date: datetime) -> List[Execution]:
     """
     Retrieves executions for a specific job name that started on or after the given cutoff datetime.
     """
     return (
-        session.query(Execution)
+        db_session.query(Execution)
         .filter(
             Execution.job_name == job_name,
             Execution.start_time >= cutoff_date
@@ -59,3 +60,28 @@ def get_executions_by_job_in_time_range(session: Session, job_name: str, cutoff_
         .order_by(Execution.start_time.desc())
         .all()
     )
+
+def store_test_results(db_session: Session, execution_id: int, test_cases: list[dict]) -> None:
+    for tc in test_cases:
+        db_session.add(TestResult(execution_id=execution_id,name=tc["name"],status= tc["status"],
+            duration     = tc["duration"],
+            error_details= tc["errorDetails"]
+        ))
+    db_session.commit()
+
+def get_test_results_for_execution(session, build_number: int):
+    exec_obj = get_execution_by_build_number(session, build_number)
+    if not exec_obj:
+        return {"success": False, "message": "No such execution"}
+    rows = session.query(TestResult)\
+                  .filter(TestResult.execution_id == exec_obj.id)\
+                  .order_by(TestResult.id)\
+                  .all()
+    if not rows:
+        return {"success": False}
+    return {
+        "success": True,
+        "data": {
+        "test_cases": [r.as_dict() for r in rows]
+        }
+    }

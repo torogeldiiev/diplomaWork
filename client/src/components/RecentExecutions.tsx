@@ -32,14 +32,16 @@ const RecentExecutions: React.FC<RecentExecutionsProps> = ({ onSelectExecution }
   const handleCheck = async (exec: Execution) => {
     setButtonLoading(b => ({ ...b, [exec.buildNumber]: true }));
     try {
-      const res = await fetchTestResults(exec.jobName, Number(exec.buildNumber));
+      const res = await fetchTestResults(Number(exec.buildNumber));
       if (res.success) {
         onSelectExecution(exec);
       } else {
+        alert('No report.json found for this build. Check console logs for errors.');
         console.error('Fetch test results failed', res);
       }
     } catch (err) {
       console.error('Error fetching test results', err);
+      alert(`Error fetching test results: ${err}`);
     } finally {
       setButtonLoading(b => ({ ...b, [exec.buildNumber]: false }));
     }

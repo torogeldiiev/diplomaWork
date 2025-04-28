@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import json
 from datetime import datetime, timedelta
@@ -17,47 +19,48 @@ class JenkinsChecker:
         with self.db_session_maker() as session:
             return execution_utils.get_recent_executions(session)
 
-    def get_test_results_for_build(self, job_name: str, build_number: int):
-        try:
-            job = self.client.get_job(job_name)
-            build = job.get_build(build_number)
+    def _fetch_jenkins_report_json(self, job_name: str, build_number: int) -> str | None:
+        job = self.client.get_job(job_name)
+        build = job.get_build(build_number)
 
-            if build.is_running():
-                return {
-                    'success': True,
-                    'data': {
-                        'status': 'RUNNING',
-                        'test_cases': []
-                    }
-                }
+        if build.is_running():
+            return None
 
-            artifacts = build.get_artifact_dict()
-            if 'report.json' not in artifacts:
-                raise Exception("report.json not found in artifacts")
+        artifacts = build.get_artifact_dict()
+        if "report.json" not in artifacts:
+            logger.error("report.json not found for %s#%s", job_name, build_number)
+            return None
 
-            report_content = artifacts['report.json'].get_data().decode("utf-8")
-            parsed = json.loads(report_content)
+        return artifacts["report.json"].get_data().decode("utf-8")
 
-            test_cases = []
-            for test in parsed.get('tests', []):
-                test_cases.append({
-                    'name': test.get('nodeid'),
-                    'status': test.get('call', {}).get('outcome', 'unknown').upper(),
-                    'duration': test.get('call', {}).get('duration', 0.0),
-                    'errorDetails': test.get('call', {}).get('crash', {}).get('message')
-                })
+    def _parse_report(self, report_content: str) -> list[dict]:
+        parsed = json.loads(report_content)
+        cases = []
+        for test in parsed.get("tests", []):
+            call = test.get("call", {})
+            cases.append({
+                "name": test.get("nodeid"),
+                "status": call.get("outcome", "unknown").upper(),
+                "duration": float(call.get("duration", 0.0)),
+                "errorDetails": call.get("crash", {}).get("message")
+            })
+        return cases
 
+    def store_tests_results(self, job_name: str, build_number: int):
+        raw = self._fetch_jenkins_report_json(job_name, build_number)
+        if raw is None:
             return {
-                'success': True,
-                'data': {
-                    'status': build.get_status(),
-                    'test_cases': test_cases
-                }
+                "success": False,
+                "message": "No report.json found (or build still running)"
             }
+        cases = self._parse_report(raw)
+        with self.db_session_maker() as session:
+            execution = execution_utils.get_execution_by_build_number(session, build_number)
+            return execution_utils.store_test_results(session,execution.id, cases)
 
-        except Exception as e:
-            logger.error(f"Failed to fetch test results for build #{build_number} of {job_name}: {e}")
-            return {'success': False, 'message': str(e)}
+    def get_stored_test_results(self, build_number: int):
+        with self.db_session_maker() as session:
+            return execution_utils.get_test_results_for_execution(session, build_number)
 
     def get_job_statistics(self, job_name: str, days: int) -> dict:
         cutoff = datetime.utcnow() - timedelta(days=days)
@@ -78,7 +81,7 @@ class JenkinsChecker:
             if e.start_time and e.end_time:
                 total_time += (e.end_time - e.start_time).total_seconds()
 
-            tr = self.get_test_results_for_build(e.job_name, e.build_number)
+            tr = self.get_stored_test_results(e.build_number)
             cases = tr.get("data", {}).get("test_cases", [])
             passed = sum(1 for c in cases if c["status"] == "PASSED")
             failed = len(cases) - passed
@@ -110,7 +113,8 @@ class JenkinsChecker:
         for name in self.client.list_jobs():
             xml = self.client.get_job_config_xml(name)
             root = ET.fromstring(xml)
-            params = {}
+            params: dict[str, str] = {}
+
             for pd in root.findall(
                     ".//hudson.model.ParametersDefinitionProperty/parameterDefinitions/*"
             ):
@@ -119,9 +123,17 @@ class JenkinsChecker:
                     pval = pd.findtext("defaultValue", "")
                 elif pd.tag.endswith("ChoiceParameterDefinition"):
                     choices = pd.find("choices")
-                    pval = choices.findall("string")[0].text if choices is not None else ""
+                    if choices is not None:
+                        opts = choices.findall("string")
+                        pval = opts[0].text or "" if opts else ""
+                    else:
+                        pval = ""
                 else:
                     pval = pd.findtext("defaultValue", "")
+
                 params[pname] = pval
+
             out.append({"name": name, "parameters": params})
+
         return out
+

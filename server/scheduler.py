@@ -15,10 +15,11 @@ class AbstractJob:
 def _dispatch(scheduler: sched.scheduler, job: AbstractJob, interval: int) -> None:
     try:
         logger.debug("Running scheduled job: %s", job.__class__.__name__)
-        job.execute()
+        keep_going = job.execute()
     except Exception:
         logger.error("Exception caught during scheduled job execution", exc_info=True)
-    finally:
+        keep_going = True      # or False, depending on how you want to recover
+    if keep_going:
         scheduler.enter(interval, 1, _dispatch, (scheduler, job, interval))
 
 

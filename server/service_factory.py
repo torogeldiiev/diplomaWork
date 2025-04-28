@@ -25,5 +25,5 @@ class ServiceFactory:
         return self.jenkins_checker
 
     def get_jenkins_updater(self, job_name, build_number) -> JenkinsUpdater:
-        return JenkinsUpdater(self.jenkins_client, self.db_session_maker, job_name, build_number)
+        return JenkinsUpdater(self.jenkins_client, self.jenkins_checker,  self.db_session_maker, job_name, build_number)
 

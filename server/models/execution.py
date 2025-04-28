@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String, DateTime, JSON
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from .base import Base
 
 
@@ -24,3 +25,5 @@ class Execution(Base):
             "buildNumber": self.build_number,
             "parameters": self.parameters
         }
+
+    test_results = relationship("TestResult",back_populates="execution",cascade="all, delete-orphan")

@@ -12,26 +12,37 @@ const TestResults: React.FC<TestResultsProps> = ({ jobType, buildNumber }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchResults = async () => {
-      try {
-        const data: JobResult = await fetchTestResults(jobType, buildNumber);
-        if (data.success) {
-          setResults(data.data.test_cases);
-        } else {
-          setError(data.data.status);
-        }
-      } catch (err) {
-        setError('Failed to fetch test results');
-      } finally {
-        setLoading(false);
+  const fetchResults = async () => {
+    setLoading(true);
+    try {
+      const res: any = await fetchTestResults(buildNumber);
+      console.log("raw job-results payload:", res);
+      if (!res.success) {
+        setError(res.message ?? "Unknown error");
+        setResults([]);
+        return;
       }
-    };
+      const list: TestCase[] = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.test_cases)
+          ? res.data.test_cases
+          : [];
 
-    fetchResults();
+      setResults(list);
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch test results");
+      setResults([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const interval = setInterval(fetchResults, 30000);
-    return () => clearInterval(interval);
-  }, [jobType, buildNumber]);
+  fetchResults();
+  const iv = setInterval(fetchResults, 30_000);
+  return () => clearInterval(iv);
+}, [jobType, buildNumber]);
+
 
   if (loading) return <LoadingIndicator />;
   if (error) return <ErrorDisplay message={error} />;

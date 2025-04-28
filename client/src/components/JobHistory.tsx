@@ -49,7 +49,7 @@ const JobHistory = () => {
       const exec = history?.executions.find(e => e.id.toString() === executionId);
       if (!exec) return;
 
-      const data = await fetchTestResults(selectedJob, Number(exec.buildNumber));
+      const data = await fetchTestResults(Number(exec.buildNumber));
       console.log('Test results:', data);
 
     } catch (error) {
@@ -91,7 +91,7 @@ const JobHistory = () => {
   }
 
   return (
-    <Paper elevation={3} sx={{ p: 3 }}>
+    <Paper elevation={3} sx={{ p: 3 ,display: 'flex', flexDirection: 'column', height: 600, width: 650}}>
       <Typography variant="h6" gutterBottom>
         Job History
       </Typography>
@@ -156,52 +156,54 @@ const JobHistory = () => {
             Executions:
           </Typography>
 
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Start Time</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Total Tests</TableCell>
-                  <TableCell>Passed</TableCell>
-                  <TableCell>Failed</TableCell>
-                  <TableCell>Action</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {history.executions.map((exec) => (
-                  <TableRow key={exec.id}>
-                    <TableCell>{new Date(exec.startTime).toLocaleString()}</TableCell>
-                    <TableCell>{exec.status}</TableCell>
-                    <TableCell>{exec.totalTests}</TableCell>
-                    <TableCell>{exec.passed}</TableCell>
-                    <TableCell>{exec.failed}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="outlined"
-                        onClick={() => handleCheckResults(exec.id.toString())}
-                        disabled={executionLoadingStates[exec.id.toString()]}
-                      >
-                        {executionLoadingStates[exec.id.toString()] ? (
-                          <CircularProgress size={16} color="inherit" />
-                        ) : (
-                          'Check Test Results'
-                        )}
-                      </Button>
-                      <Button
-                        variant="outlined"
-                        color="secondary"
-                        onClick={() => handleRestartJob(selectedJob, exec.parameters, exec.id.toString())}
-                        disabled={executionLoadingStates[exec.id.toString()]}
-                      >
-                        Restart
-                      </Button>
-                    </TableCell>
+          <Box sx={{ flexGrow: 1, overflowY: 'auto', mt: 1 }}>
+            <TableContainer>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Start Time</TableCell>
+                    <TableCell>Status</TableCell>
+                    <TableCell>Total Tests</TableCell>
+                    <TableCell>Passed</TableCell>
+                    <TableCell>Failed</TableCell>
+                    <TableCell>Action</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {history.executions.map((exec) => (
+                    <TableRow key={exec.id}>
+                      <TableCell>{new Date(exec.startTime).toLocaleString()}</TableCell>
+                      <TableCell>{exec.status}</TableCell>
+                      <TableCell>{exec.totalTests}</TableCell>
+                      <TableCell>{exec.passed}</TableCell>
+                      <TableCell>{exec.failed}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="outlined"
+                          onClick={() => handleCheckResults(exec.id.toString())}
+                          disabled={executionLoadingStates[exec.id.toString()]}
+                        >
+                          {executionLoadingStates[exec.id.toString()] ? (
+                            <CircularProgress size={16} color="inherit" />
+                          ) : (
+                            'Check Test Results'
+                          )}
+                        </Button>
+                        <Button
+                          variant="outlined"
+                          color="secondary"
+                          onClick={() => handleRestartJob(selectedJob, exec.parameters, exec.id.toString())}
+                          disabled={executionLoadingStates[exec.id.toString()]}
+                        >
+                          Restart
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
         </>
       )}
     </Paper>

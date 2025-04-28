@@ -62,8 +62,8 @@ class JenkinsTrigger(Resource):
         job_type = request.json["job_type"]
         parameters = request.json["parameters"]
         result = jenkins_submitter_service.trigger_job(job_type, parameters)
-        build_number = result.get('data', {}).get('queue_number')
-        job_type = result.get('data', {}).get('job_name')
+        build_number = result.get('data').get('queue_number')
+        job_type = result.get('data').get('job_name')
         execution = jenkins_submitter_service.create_execution_entry(job_type, build_number, parameters)
         updater = service_factory.get_jenkins_updater(job_type, build_number)
         scheduler.schedule(updater, seconds=15)
@@ -85,12 +85,14 @@ class ClustersList(Resource):
         return jsonify(clusters)
 
 
-@api.route("/api/jenkins/job-results/<string:job_type>/<int:build_number>")
+@api.route("/api/jenkins/job-results/<int:build_number>")
 class JenkinsJobResults(Resource):
-    def get(self, job_type: str, build_number: int) -> Response:
-        result = jenkins_checker_service.get_test_results_for_build(job_type, build_number)
-        logger.info("Jenkins job results: %s", result)
-        return jsonify(result)
+    def get(self, build_number: int) -> Response:
+        stored = jenkins_checker_service.get_stored_test_results(build_number)
+        if stored is not None:
+            logger.info(stored)
+            return jsonify(stored)
+        return None
 
 
 @api.route("/api/executions/recent")

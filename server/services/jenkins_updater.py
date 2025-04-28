@@ -7,8 +7,9 @@ logger = logging.getLogger(__name__)
 
 
 class JenkinsUpdater(AbstractJob):
-    def __init__(self, client, db_session_maker, job_name, build_number):
+    def __init__(self, client, jenkins_checker_service, db_session_maker, job_name, build_number):
         self.client = client
+        self.jenkins_checker = jenkins_checker_service
         self.db_session_maker = db_session_maker
         self.job_name = job_name
         self.build_number = build_number
@@ -30,7 +31,7 @@ class JenkinsUpdater(AbstractJob):
         except Exception as e:
             logger.error("Failed to send notification for %s#%s: %s", job_name, build_number, e)
 
-    def execute(self) -> None:
+    def execute(self) -> bool:
         status = self.client.get_job_status(self.job_name, self.build_number)
         logger.info(f"Jenkins updater status: {status}")
 
@@ -40,7 +41,9 @@ class JenkinsUpdater(AbstractJob):
                 execution = execution_utils.get_execution_by_build_number(session, self.build_number)
                 execution_utils.update_running_execution(session, execution, status)
                 self.notify_job_completion(self.job_name, self.build_number, status)
+                self.jenkins_checker.store_tests_results(self.job_name, self.build_number)
+            return False
         else:
             logger.debug("Build %s#%s still IN_PROGRESS", self.job_name, self.build_no)
-
+            return True
 
