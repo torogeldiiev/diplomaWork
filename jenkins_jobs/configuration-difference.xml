@@ -5,31 +5,12 @@
             <parameterDefinitions>
                 <hudson.model.StringParameterDefinition>
                     <name>source</name>
-                    <defaultValue></defaultValue>
-                    <description>Source version (e.g., CHF2 or CDH:gbn://123456)</description>
+                    <description>Source version</description>
                 </hudson.model.StringParameterDefinition>
                 <hudson.model.StringParameterDefinition>
                     <name>target</name>
-                    <defaultValue></defaultValue>
-                    <description>Target version (e.g., CHF3 or CM:gbn://654321)</description>
+                    <description>Target version</description>
                 </hudson.model.StringParameterDefinition>
-                <hudson.model.ChoiceParameterDefinition>
-                    <name>dry_run</name>
-                    <choices>
-                        <string>true</string>
-                        <string>false</string>
-                    </choices>
-                    <description>Dry run flag</description>
-                </hudson.model.ChoiceParameterDefinition>
-                <hudson.model.ChoiceParameterDefinition>
-                    <name>launch_multiplier</name>
-                    <choices>
-                        <string>1</string>
-                        <string>2</string>
-                        <string>3</string>
-                    </choices>
-                    <description>Multiplier for running tests multiple times</description>
-                </hudson.model.ChoiceParameterDefinition>
             </parameterDefinitions>
         </hudson.model.ParametersDefinitionProperty>
     </properties>

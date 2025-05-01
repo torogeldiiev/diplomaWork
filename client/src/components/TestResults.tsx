@@ -22,11 +22,16 @@ const TestResults: React.FC<TestResultsProps> = ({ jobType, buildNumber }) => {
         setResults([]);
         return;
       }
-      const list: TestCase[] = Array.isArray(res.data)
-        ? res.data
-        : Array.isArray(res.data?.test_cases)
-          ? res.data.test_cases
-          : [];
+      const rawCases = Array.isArray(res.data?.test_cases)
+        ? res.data.test_cases
+        : [];
+
+      const list: TestCase[] = rawCases.map((tc: any) => ({
+        name: tc.name,
+        status: tc.status,
+        duration: tc.duration,
+        errorDetails: tc.error_details ?? undefined,
+      }));
 
       setResults(list);
       setError(null);
